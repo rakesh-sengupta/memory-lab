@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memory Lab</title>
+<meta name="description" content="Three short in-class activities on learning, memory and plasticity: mirror tracing, a Hebbian cell-assembly model, and a word-list memory test. Nothing is saved or sent.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a lab bench. Picture on the left, steps and readouts on the right; stacks on phones. */
+:root {
+  --bg: #F3F1EC; --panel: #FFFFFF; --ink: #1C2433; --muted: #5B6475; --rule: #D8D4CB;
+  --accent: #1F3A5F; --ok: #23665A; --warn: #A12F24; --stage: #FBFAF7; --grid: #E6E2D9;
+  --na: #B85A0E; --k: #6A3D9A; --trace: #1F3A5F; --ghost: #9AA6B8; --stim: #23665A;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161E; --panel: #1A202B; --ink: #E8EAF0; --muted: #A3ABBA; --rule: #2E3646;
+    --accent: #9DB7DD; --ok: #6FC3AE; --warn: #F08A7E; --stage: #161B24; --grid: #273041;
+    --na: #F2994A; --k: #B79CE8; --trace: #E8EAF0; --ghost: #5D6A80; --stim: #6FC3AE;
+    color-scheme: dark;
+  }
+}
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+.app { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.topbar { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; border-bottom: 2px solid var(--rule); padding-block: 4px 8px; }
+.topbar h1 { font-size: 1.05rem; margin: 0; color: var(--accent); letter-spacing: 0.02em; }
+.topbar .note { font-size: 0.85rem; color: var(--muted); }
+#jspsych-target { min-height: 70vh; display: flex; flex-direction: column; }
+
+/* jsPsych essentials (inlined) */
+.jspsych-display-element { display: flex; flex-direction: column; font-family: var(--font-body); font-size: 17px; line-height: 1.5; }
+.jspsych-display-element:focus { outline: none; }
+.jspsych-content-wrapper { display: flex; align-items: flex-start; margin: 0 auto; flex: 1 1 100%; width: 100%; }
+.jspsych-content { max-width: 100%; width: 100%; text-align: left; margin: 0 auto !important; }
+.jspsych-btn, .btn {
+  display: inline-block; font: 700 1rem var(--font-body); cursor: pointer;
+  padding: 12px 24px; border-radius: 10px; border: 2px solid var(--accent);
+  background: var(--accent); color: var(--bg); touch-action: manipulation;
+}
+.btn2 { font: 700 0.95rem var(--font-body); padding: 9px 16px; border-radius: 10px; border: 2px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+.jspsych-btn:focus-visible, .btn:focus-visible, .btn2:focus-visible, input:focus-visible, button:focus-visible { outline: 3px solid var(--na); outline-offset: 2px; }
+.jspsych-html-button-response-btngroup { display: flex; justify-content: center; margin-top: 16px; }
+
+/* reading column */
+.read { max-width: 42rem; margin: 8px auto; display: flex; flex-direction: column; gap: 12px; }
+.read h2 { font-size: 1.6rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.read p { margin: 0; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.calm { background: var(--panel); border-left: 4px solid var(--ok); padding: 10px 14px; border-radius: 6px; }
+.partlist { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 4px; }
+
+/* lab bench */
+.bench-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.bench-head h2 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+.glance { background: var(--panel); border-left: 4px solid var(--na); padding: 8px 12px; border-radius: 6px; font-weight: 700; color: var(--accent); }
+.bench { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.card h3 { margin: 0 0 8px; font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.plotwrap { position: relative; width: 100%; }
+canvas { display: block; width: 100%; background: var(--stage); border-radius: 8px; }
+.readout { margin-top: 8px; font-size: 1.05rem; font-weight: 700; min-height: 1.6em; }
+.readout .num { font-family: var(--font-num); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
+.sw { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.ctrl { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.ctrl label { font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+.ctrl .val { font-family: var(--font-num); font-weight: 600; color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); min-height: 32px; }
+.toggle { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-weight: 700; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--warn); }
+.toggle small { font-weight: 400; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 3px; }
+.field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+.field label { font-size: 0.95rem; }
+.field .inrow { display: flex; gap: 8px; align-items: center; }
+.field input { font: 600 1rem var(--font-num); width: 6.5rem; padding: 6px 8px; border-radius: 8px; border: 2px solid var(--rule); background: var(--stage); color: var(--ink); }
+.fb { font-size: 0.9rem; }
+.fb.ok { color: var(--ok); } .fb.hint { color: var(--warn); }
+.q { margin-bottom: 12px; }
+.q p { margin: 0 0 6px; font-weight: 700; }
+.opts { display: flex; flex-direction: column; gap: 6px; }
+.opt { text-align: left; font: 400 0.95rem var(--font-body); padding: 8px 12px; border-radius: 8px; border: 2px solid var(--rule); background: var(--stage); color: var(--ink); cursor: pointer; }
+.opt.right { border-color: var(--ok); }
+.opt.wrong { border-color: var(--warn); }
+.done { background: var(--panel); border: 1px dashed var(--ok); border-radius: 10px; padding: 8px 12px; font-size: 0.95rem; }
+.navrow { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.tiny { font-size: 0.82rem; color: var(--muted); }
+.copyline { font-family: var(--font-num); font-size: 0.98rem; background: var(--panel); border: 1px dashed var(--accent); border-radius: 8px; padding: 10px 12px; user-select: all; overflow-wrap: anywhere; }
+table.sum { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+table.sum td { border-bottom: 1px solid var(--rule); padding: 6px 4px; vertical-align: top; }
+table.sum td.v { font-family: var(--font-num); text-align: right; white-space: nowrap; }
+.loadmsg { margin: auto; color: var(--muted); }
+/* ---- Memory Lab additions ---- */
+.canvwrap { display: flex; justify-content: center; align-items: center; width: 100%; }
+.canvwrap canvas { display: block; touch-action: none; border-radius: 10px; background: var(--stage); border: 1px solid var(--rule); }
+.canvwrap canvas.nocursor { cursor: none; }
+.flag { display: inline-block; font: 700 0.8rem var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: var(--na); color: var(--panel); }
+.flag.plain { background: var(--ok); }
+.word { font: 700 clamp(2.2rem, 7vw, 3.6rem) var(--font-body); text-align: center; padding: 14vh 0 10vh; letter-spacing: 0.02em; }
+.listcard { text-align: center; padding: 14vh 0 10vh; font-size: 1.3rem; color: var(--muted); font-weight: 700; }
+.testword { font: 700 clamp(1.9rem, 6vw, 2.8rem) var(--font-body); text-align: center; margin: 6vh 0 8px; }
+.testq { text-align: center; color: var(--muted); margin-bottom: 4px; }
+.testcount { text-align: center; font: 600 0.85rem var(--font-num); color: var(--muted); }
+.jspsych-html-button-response-btngroup { flex-wrap: wrap; gap: 10px; }
+.jspsych-html-button-response-button { margin: 0 !important; }
+.ansbtn { min-width: 9.5rem; }
+.ansbtn.new { background: var(--panel); color: var(--accent); }
+.partcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 10px; }
+.partcard { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.partcard h3 { margin: 0; font-size: 1.1rem; }
+.partcard .what { font-size: 0.95rem; color: var(--muted); margin: 0; }
+.partcard .status { font: 600 0.85rem var(--font-num); }
+.partcard .status.open { color: var(--ok); } .partcard .status.locked { color: var(--na); }
+.partcard input { font: 600 1.05rem var(--font-num); width: 9.5rem; max-width: 100%; padding: 7px 9px; border-radius: 8px; border: 2px solid var(--rule); background: var(--stage); color: var(--ink); }
+.arith { font: 700 clamp(1.7rem, 5vw, 2.4rem) var(--font-num); text-align: center; margin: 4vh 0 12px; }
+.bar { height: 14px; border-radius: 4px; background: var(--accent); }
+.barrow { display: grid; grid-template-columns: minmax(8rem, 13rem) 1fr 3.6rem; gap: 8px; align-items: center; margin: 6px 0; font-size: 0.95rem; }
+.barrow .v { font-family: var(--font-num); text-align: right; }
+.bartrack { background: var(--grid); border-radius: 4px; height: 14px; overflow: hidden; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 0.88rem var(--font-num); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--rule); background: var(--stage); }
+.chip.yes { border-color: var(--warn); color: var(--warn); }
+.chip.hit { border-color: var(--ok); color: var(--ok); }
+.memrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 8px; }
+.mem { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.82rem; color: var(--muted); }
+.mem canvas { border: 1px solid var(--rule); border-radius: 6px; background: var(--stage); }
+.mem.learned { color: var(--ok); font-weight: 700; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.btn2.on { background: var(--accent); color: var(--panel); }
+.btn2:disabled { opacity: 0.45; cursor: not-allowed; }
+.small { font-size: 0.88rem; }
+fieldset.seg { border: none; padding: 0; margin: 0 0 8px; }
+fieldset.seg legend { font-weight: 700; margin-bottom: 4px; padding: 0; }
+.drawhint { font-size: 0.85rem; color: var(--na); min-height: 1.2em; }
+.bench.tight { grid-template-columns: min-content minmax(0, 1fr); }
+@media (max-width: 600px) { .bench.tight { grid-template-columns: minmax(0, 1fr); } }
+@media (max-height: 520px) { .bench-head h2 { font-size: 1.15rem; } .glance { padding: 4px 10px; font-size: 0.95rem; } .topbar .note { display: none; } .bench-head { margin-bottom: 4px; } }
+.btn2.on:disabled { opacity: 0.9; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Memory Lab</h1>
+    <span class="note">Introduction to Neuroscience · Session 17 · learning, memory and plasticity · nothing is saved or sent</span>
+  </header>
+  <div id="jspsych-target"><p class="loadmsg">Loading the lab…</p></div>
+</div>
+
+<script src="lib/jspsych-7.3.4.min.js"></script>
+<script src="lib/plugin-html-button-response-1.2.0.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var target = document.getElementById("jspsych-target");
+  if (typeof initJsPsych !== "function" || typeof jsPsychHtmlButtonResponse === "undefined") {
+    target.innerHTML = '<div class="read"><h2>The lab could not load</h2><p>Check your internet connection and reload this page.</p></div>';
+    return;
+  }
+  var PT = jsPsychModule.ParameterType;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var FAST = /[?&]fast=1/.test(location.search); // testing only: shorter timings
+
+  /* ---------------- part passwords ----------------
+     Each part opens with the word shown on its lab slide, so the class moves together.
+     Change them here and in the slides (\labpw). Case and spaces are ignored.
+     This paces the class; it is not security (the words are in the page). */
+  var PASSWORDS = { "1": "mirror", "2": "assembly", "3": "rebuild" };
+
+  /* ---------------- helpers ---------------- */
+  function norm(w) { return String(w || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function fmt1(v) { return (Math.round(v * 10) / 10).toFixed(1); }
+  function pct(v) { return Math.round(v * 100) + "%"; }
+  function isOpen(p) { try { return sessionStorage.getItem("memlab-open-" + p) === "1"; } catch (e) { return !!OPEN[p]; } }
+  function setOpen(p) { OPEN[p] = true; try { sessionStorage.setItem("memlab-open-" + p, "1"); } catch (e) {} }
+  var OPEN = {};
+  function rng(seed) { var s = (seed >>> 0) || 1; return function () { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+  function setupCanvas(cv, w, h) {
+    var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.width = w + "px"; cv.style.height = h + "px";
+    var ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+  }
+  // largest square that fits beside the controls (or above them on narrow screens) and inside the window
+  function fitSquare(root, wrap, maxS, reserveBelow) {
+    var bench = root.querySelector(".bench"), two = window.innerWidth > 600;
+    var w = two ? Math.floor((bench ? bench.clientWidth : window.innerWidth) * 0.56) - 30 : (wrap.clientWidth || 300);
+    var top = wrap.getBoundingClientRect().top + (window.scrollY || 0);
+    var h = window.innerHeight - (two ? Math.min(top, 220) : 0) - (two ? 24 : reserveBelow);
+    return Math.floor(Math.max(200, Math.min(maxS, w, h)));
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  var LAB = { mirror: [], done: {} };
+
+  /* =======================================================================
+     A generic page plugin: each page is built by a function (el, api).
+     ======================================================================= */
+  function Page(jsPsych) { this.jsPsych = jsPsych; }
+  Page.info = { name: "memlab-page", parameters: { build: { type: PT.FUNCTION, default: null }, tag: { type: PT.STRING, default: "" } } };
+  Page.prototype.trial = function (el, trial) {
+    var self = this, cleanup = [], ended = false;
+    try { window.scrollTo(0, 0); } catch (e) {}
+    var api = {
+      finish: function (d) { if (ended) return; ended = true; cleanup.forEach(function (f) { try { f(); } catch (e) {} }); var out = d || {}; out.tag = trial.tag; self.jsPsych.finishTrial(out); },
+      onCleanup: function (f) { cleanup.push(f); },
+      onResize: function (fn) { var t = null; var h = function () { clearTimeout(t); t = setTimeout(fn, 120); }; window.addEventListener("resize", h); cleanup.push(function () { window.removeEventListener("resize", h); clearTimeout(t); }); }
+    };
+    trial.build(el, api);
+  };
+  function page(build, tag) { return { type: Page, build: build, tag: tag || "" }; }
+  function headHTML(eyebrow, title, glance) { return '<div class="bench-head"><span class="eyebrow">' + eyebrow + '</span><h2>' + title + '</h2>' + (glance ? '<div class="glance">' + glance + '</div>' : '') + '</div>'; }
+
+  /* =======================================================================
+     MENU
+     ======================================================================= */
+  var PARTS = {
+    "1": { title: "Mirror hands", what: "Learn a new skill: trace a star while seeing your hand upside down, as Henry Molaison (H.M.) did.", mins: "about 8 min" },
+    "2": { title: "Cells that wire together", what: "Teach a small network of model neurons, then cue it, damage it and overload it.", mins: "about 8 min" },
+    "3": { title: "Remembering is rebuilding", what: "Study four word lists, then test your memory for them.", mins: "about 6 min" }
+  };
+  var CHOICE = { go: null };
+  function menuPage() {
+    return page(function (el, api) {
+      var html = '<div class="read" style="max-width:62rem"><span class="eyebrow">Session 17 · Learning, memory and plasticity</span>' +
+        '<h2>Memory Lab</h2>' +
+        '<div class="calm">Three short parts. Each opens with a <b>password</b> shown on its lab slide, so we move together. ' +
+        'Write your numbers on paper: <b>nothing is saved or sent</b>.</div><div class="partcards">';
+      ["1", "2", "3"].forEach(function (p) {
+        var P = PARTS[p], open = isOpen(p);
+        html += '<div class="partcard"><span class="eyebrow">Part ' + p + ' · ' + P.mins + '</span><h3>' + P.title + '</h3><p class="what">' + P.what + '</p>' +
+          '<span class="status ' + (open ? 'open">' + (LAB.done[p] ? 'Done ✓ (you can do it again)' : 'Unlocked') : 'locked">Locked') + '</span>';
+        if (open) html += '<button class="btn" data-go="' + p + '">' + (LAB.done[p] ? 'Do Part ' + p + ' again' : 'Start Part ' + p) + '</button>';
+        else html += '<form class="pwrow" data-pw="' + p + '" autocomplete="off"><label for="pw' + p + '">Password from the slide</label>' +
+          '<div class="inrow"><input id="pw' + p + '" type="text" autocapitalize="none" autocorrect="off" spellcheck="false"><button class="btn2" type="submit">Unlock</button></div>' +
+          '<div class="fb" aria-live="polite"></div></form>';
+        html += '</div>';
+      });
+      html += '</div><p class="tiny">Works on a laptop or a phone held sideways. Part 1 needs a mouse, trackpad or finger. Nothing flashes and there is no sound.</p></div>';
+      el.innerHTML = html;
+      el.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { CHOICE.go = b.getAttribute("data-go"); api.finish({ go: CHOICE.go }); }); });
+      el.querySelectorAll("form[data-pw]").forEach(function (f) {
+        f.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var p = f.getAttribute("data-pw"), inp = f.querySelector("input"), fb = f.querySelector(".fb");
+          if (norm(inp.value) === norm(PASSWORDS[p])) { setOpen(p); CHOICE.go = p; api.finish({ go: p }); }
+          else { fb.className = "fb hint"; fb.textContent = inp.value ? "Not that one. Check the slide for Part " + p + "." : "Type the word shown on the slide."; inp.select(); }
+        });
+      });
+    }, "menu");
+  }
+
+  /* =======================================================================
+     PART 1 · MIRROR HANDS
+     ======================================================================= */
+  var N_MIRROR = 5, TIME_CAP = FAST ? 8 : 75;
+  // a five-pointed star, in unit coordinates (0..1), starting at the top point, going clockwise
+  var STAR = (function () {
+    var cx = 0.5, cy = 0.53, R = 0.40, r = 0.168, v = [];
+    for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rad = (i % 2 === 0) ? R : r; v.push({ x: cx + rad * Math.cos(a), y: cy + rad * Math.sin(a) }); }
+    var pts = [], step = 0.006;
+    for (var k = 0; k < 10; k++) {
+      var A = v[k], B = v[(k + 1) % 10], L = Math.hypot(B.x - A.x, B.y - A.y), n = Math.max(1, Math.round(L / step));
+      for (var j = 0; j < n; j++) pts.push({ x: A.x + (B.x - A.x) * j / n, y: A.y + (B.y - A.y) * j / n });
+    }
+    pts.push({ x: v[0].x, y: v[0].y });
+    return { v: v, pts: pts, bw: 0.042 };
+  })();
+
+  function mirrorIntro() {
+    return page(function (el, api) {
+      el.innerHTML = '<div class="read"><span class="eyebrow">Part 1 · Mirror hands</span><h2>Can you learn a skill you cannot remember learning?</h2>' +
+        '<p>In 1962 Brenda Milner asked Henry Molaison (known for decades as <b>H.M.</b>) to trace a star while he could see his hand only in a mirror. You will do the same, on screen.</p>' +
+        '<ol class="partlist"><li><b>Press and hold</b> (mouse button or finger) and move the pen <b>clockwise</b> around the star, starting at <b>START</b>. Stay between the two lines.</li>' +
+        '<li>Trace 0 is a practice with a <b>normal</b> view. Traces 1 to 5 are <b>mirrored</b>: up and down are swapped, like a mirror standing in front of you.</li>' +
+        '<li>Each trace stops after ' + TIME_CAP + ' seconds, or when you get back to START. You can lift the pen and carry on.</li>' +
+        '<li>The lab counts your <b>time</b> and how often you <b>leave the track</b>. Do not worry about speed: just keep going.</li></ol>' +
+        '<div class="calm">On a laptop a mouse is easiest; a trackpad works too (press and drag). On a phone, hold it sideways and use one finger.</div>' +
+        '<div class="navrow"><button class="btn2" id="back">Back to the menu</button><button class="btn" id="go">Start the practice trace</button></div></div>';
+      el.querySelector("#go").addEventListener("click", function () { LAB.mirror = []; api.finish({}); });
+      el.querySelector("#back").addEventListener("click", function () { api.finish({ abort: true }); });
+    }, "p1intro");
+  }
+
+  function mirrorTrace(k) {
+    var mirrored = k > 0;
+    return page(function (el, api) {
+      if (k === 0) LAB.mirror = [];
+      el.innerHTML = headHTML("Part 1 · Mirror hands · " + (mirrored ? "trace " + k + " of " + N_MIRROR : "practice"),
+        mirrored ? 'Mirrored trace ' + k + ' <span class="flag">mirror: up and down swapped</span>' : 'Practice trace <span class="flag plain">normal view</span>',
+        "Press and hold, start at START, and go clockwise between the lines.") +
+        '<div class="bench tight"><div class="card"><div class="canvwrap" id="wrap"><canvas id="cv" aria-label="A star-shaped track to trace"></canvas></div>' +
+        '<div class="legend"><span><span class="sw" style="background:var(--ok)"></span>on the track</span><span><span class="sw" style="background:var(--warn)"></span>off the track</span><span><span class="sw" style="background:var(--accent);height:10px;width:10px;border-radius:50%"></span>your pen</span></div></div>' +
+        '<div class="card"><h3>This trace</h3><table class="sum"><tr><td>Time</td><td class="v" id="tT">0.0 s</td></tr><tr><td>Times off the track</td><td class="v" id="tE">0</td></tr><tr><td>Way round the star</td><td class="v" id="tP">0%</td></tr></table>' +
+        '<p class="readout" id="st" aria-live="polite">Put the pen on START.</p>' +
+        '<div class="row"><button class="btn2" id="skip">End this trace now</button><button class="btn" id="next" hidden>' + (k < N_MIRROR ? 'Next trace' : 'See my results') + '</button></div>' +
+        '<p class="tiny" style="margin-top:10px">' + (mirrored ? 'Tip: move slowly at first. Watch the pen, not your hand.' : 'This one is to get used to the controls.') + '</p></div></div>';
+      var cv = el.querySelector("#cv"), wrap = el.querySelector("#wrap"), ctx, S = 300;
+      var tT = el.querySelector("#tT"), tE = el.querySelector("#tE"), tP = el.querySelector("#tP"), st = el.querySelector("#st");
+      var M = STAR.pts.length, bw = STAR.bw;
+      var state = { started: false, done: false, p: 0, errors: 0, onTrack: true, penDown: false, t0: 0, elapsed: 0, hover: null, strokes: [], cur: null };
+      if (mirrored && window.matchMedia && window.matchMedia("(pointer: fine)").matches) cv.classList.add("nocursor");
+      function size() { S = fitSquare(el, wrap, 520, 60); ctx = setupCanvas(cv, S, S); draw(); }
+      function d2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+      function toPen(ev) {
+        var r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+        if (mirrored) y = 1 - y;
+        return { x: x, y: y };
+      }
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, S, S);
+        var v = STAR.v, W = 2 * bw * S;
+        ctx.lineJoin = "miter"; ctx.miterLimit = 12;
+        ctx.beginPath(); v.forEach(function (p, i) { if (i) ctx.lineTo(p.x * S, p.y * S); else ctx.moveTo(p.x * S, p.y * S); }); ctx.closePath();
+        ctx.strokeStyle = css("--ink"); ctx.lineWidth = W + 3; ctx.stroke();
+        ctx.strokeStyle = css("--grid"); ctx.lineWidth = W - 3; ctx.stroke();
+        // start marker and direction arrow
+        var s0 = v[0], s1 = STAR.pts[18];
+        ctx.fillStyle = css("--ok"); ctx.beginPath(); ctx.arc(s0.x * S, s0.y * S, Math.max(6, bw * S * 0.55), 0, 6.3); ctx.fill();
+        ctx.font = "700 " + Math.max(11, Math.round(S * 0.032)) + "px " + css("--font-body"); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+        ctx.fillText("START", s0.x * S + bw * S + 6, s0.y * S - 2);
+        var ang = Math.atan2(s1.y - s0.y, s1.x - s0.x), ax = s0.x * S + Math.cos(ang) * bw * S * 2.6 + 14, ay = s0.y * S + Math.sin(ang) * bw * S * 2.6;
+        ctx.strokeStyle = css("--ok"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(ax - Math.cos(ang) * 16, ay - Math.sin(ang) * 16); ctx.lineTo(ax, ay); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - Math.cos(ang - 0.5) * 8, ay - Math.sin(ang - 0.5) * 8); ctx.moveTo(ax, ay); ctx.lineTo(ax - Math.cos(ang + 0.5) * 8, ay - Math.sin(ang + 0.5) * 8); ctx.stroke();
+        // the trail
+        ctx.lineWidth = 3; ctx.lineCap = "round";
+        state.strokes.forEach(function (sk) {
+          for (var i = 1; i < sk.length; i++) { ctx.strokeStyle = sk[i].on ? css("--ok") : css("--warn"); ctx.beginPath(); ctx.moveTo(sk[i - 1].x * S, sk[i - 1].y * S); ctx.lineTo(sk[i].x * S, sk[i].y * S); ctx.stroke(); }
+        });
+        // the pen
+        if (state.hover) {
+          ctx.beginPath(); ctx.arc(state.hover.x * S, state.hover.y * S, 6, 0, 6.3);
+          if (state.penDown) { ctx.fillStyle = css("--accent"); ctx.fill(); } else { ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2; ctx.stroke(); }
+        }
+      }
+      function nearest(pt) {
+        var lo = Math.max(0, state.p - 25), hi = Math.min(M - 1, state.p + 25), best = 9;
+        for (var i = lo; i <= hi; i++) { var d = d2(pt, STAR.pts[i]); if (d < best) best = d; }
+        return best;
+      }
+      function handle(pt) {
+        state.hover = pt;
+        if (state.done) { draw(); return; }
+        if (!state.started) {
+          if (d2(pt, STAR.pts[0]) < bw * 1.6) { state.started = true; state.t0 = performance.now(); st.textContent = "Go! Clockwise, between the lines."; }
+          else { st.textContent = mirrored ? "Find START first. Remember: up and down are swapped." : "Find START first (the green dot at the top)."; }
+        }
+        if (state.started) {
+          var on = nearest(pt) <= bw;
+          if (!on && state.onTrack) { state.errors++; tE.textContent = state.errors; }
+          state.onTrack = on;
+          var newp = state.p;
+          for (var k2 = state.p + 1; k2 <= Math.min(M - 1, state.p + 20); k2++) if (d2(pt, STAR.pts[k2]) <= bw) newp = k2;
+          state.p = newp; tP.textContent = Math.round(100 * state.p / (M - 1)) + "%";
+          if (state.cur) state.cur.push({ x: pt.x, y: pt.y, on: on });
+          if (state.p >= M - 3) end(true);
+        }
+        draw();
+      }
+      function end(completed) {
+        if (state.done) return;
+        state.done = true; state.penDown = false;
+        var t = state.started ? (performance.now() - state.t0) / 1000 : 0;
+        if (!completed && state.started) t = Math.min(t, TIME_CAP);
+        state.elapsed = t;
+        var res = { k: k, mirrored: mirrored, time: completed ? t : TIME_CAP, errors: state.errors, progress: state.p / (M - 1), completed: completed };
+        LAB.mirror[k] = res;
+        tT.textContent = fmt1(res.time) + " s"; tP.textContent = Math.round(100 * res.progress) + "%";
+        st.textContent = completed ? ("Done: " + fmt1(res.time) + " s, off the track " + res.errors + (res.errors === 1 ? " time." : " times.")) :
+          ("Stopped at " + Math.round(100 * res.progress) + "% of the way round. That is fine: it is recorded as " + TIME_CAP + " s.");
+        el.querySelector("#skip").hidden = true; var nx = el.querySelector("#next"); nx.hidden = false; nx.focus();
+        draw();
+      }
+      cv.addEventListener("pointerdown", function (ev) { ev.preventDefault(); try { cv.setPointerCapture(ev.pointerId); } catch (e) {} state.penDown = true; state.cur = []; state.strokes.push(state.cur); handle(toPen(ev)); });
+      cv.addEventListener("pointermove", function (ev) { var pt = toPen(ev); if (state.penDown) handle(pt); else { state.hover = pt; draw(); } });
+      function up() { state.penDown = false; state.cur = null; draw(); }
+      cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+      cv.addEventListener("pointerleave", function () { if (!state.penDown) { state.hover = null; draw(); } });
+      var raf = 0;
+      function tick() {
+        if (state.started && !state.done) {
+          var t = (performance.now() - state.t0) / 1000; tT.textContent = fmt1(t) + " s";
+          if (t >= TIME_CAP) end(false);
+        }
+        raf = requestAnimationFrame(tick);
+      }
+      raf = requestAnimationFrame(tick);
+      api.onCleanup(function () { cancelAnimationFrame(raf); });
+      el.querySelector("#skip").addEventListener("click", function () { end(false); });
+      el.querySelector("#next").addEventListener("click", function () { api.finish({ k: k }); });
+      api.onResize(size); size();
+    }, "trace" + k);
+  }
+
+  function lineChart(cv, W, H, series, opts) {
+    var ctx = setupCanvas(cv, W, H), L = 48, R = 14, T = 14, B = 38, w = W - L - R, h = H - T - B;
+    var xs = opts.x, yMax = opts.yMax;
+    function X(i) { return L + (xs.length === 1 ? w / 2 : i / (xs.length - 1) * w); }
+    function Y(v) { return T + h - Math.min(v, yMax) / yMax * h; }
+    ctx.font = "13px " + css("--font-body"); ctx.fillStyle = css("--muted"); ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1;
+    var ticks = opts.ticks;
+    ticks.forEach(function (v) { ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(L + w, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(String(v), L - 6, Y(v)); });
+    xs.forEach(function (lab, i) { ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(lab, X(i), T + h + 6); });
+    ctx.save(); ctx.translate(12, T + h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(opts.yLabel, 0, 0); ctx.restore();
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(opts.xLabel, L + w / 2, H - 2);
+    series.forEach(function (s) {
+      ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = s.dash ? 1.5 : 2.5; ctx.setLineDash(s.dash ? [5, 4] : []);
+      if (s.hline != null) { ctx.beginPath(); ctx.moveTo(L, Y(s.hline)); ctx.lineTo(L + w, Y(s.hline)); ctx.stroke(); ctx.setLineDash([]); ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillText(s.label, L + w, Y(s.hline) - 3); return; }
+      ctx.beginPath(); s.v.forEach(function (v, i) { if (v == null) return; if (i === 0 || s.v[i - 1] == null) ctx.moveTo(X(i), Y(v)); else ctx.lineTo(X(i), Y(v)); }); ctx.stroke(); ctx.setLineDash([]);
+      s.v.forEach(function (v, i) { if (v == null) return; ctx.beginPath(); ctx.arc(X(i), Y(v), 4.5, 0, 6.3); ctx.fill(); });
+    });
+  }
+
+  function mirrorResults() {
+    return page(function (el, api) {
+      LAB.done["1"] = true;
+      var m = [], e = [], p0 = LAB.mirror[0];
+      for (var i = 1; i <= N_MIRROR; i++) { var r = LAB.mirror[i]; m.push(r ? r.time : null); e.push(r ? r.errors : null); }
+      var first = LAB.mirror[1], last = LAB.mirror[N_MIRROR];
+      var change = (first && last && first.time > 0) ? Math.round(100 * (first.time - last.time) / first.time) : null;
+      var line = "Practice " + (p0 ? fmt1(p0.time) + " s" : "–") + " | mirror 1: " + (first ? fmt1(first.time) + " s, " + first.errors + " off" : "–") +
+        " | mirror " + N_MIRROR + ": " + (last ? fmt1(last.time) + " s, " + last.errors + " off" : "–");
+      var rows = "";
+      for (var j = 0; j <= N_MIRROR; j++) { var q = LAB.mirror[j]; if (!q) continue; rows += "<tr><td>" + (j ? "Mirror " + j : "Practice (normal)") + "</td><td class='v'>" + fmt1(q.time) + " s" + (q.completed ? "" : " *") + "</td><td class='v'>" + q.errors + "</td></tr>"; }
+      el.innerHTML = headHTML("Part 1 · Mirror hands · results", "Your learning curve",
+        (change != null ? "From mirror trace 1 to " + N_MIRROR + ", your time changed by " + (change >= 0 ? change + "% (faster)" : (-change) + "% (slower)") + "." : "Your times, trace by trace.")) +
+        '<div class="bench"><div class="card"><h3>Time per trace</h3><div class="canvwrap"><canvas id="c1"></canvas></div><h3 style="margin-top:12px">Times off the track</h3><div class="canvwrap"><canvas id="c2"></canvas></div></div>' +
+        '<div class="card"><h3>Write this down</h3><div class="copyline">' + line + '</div>' +
+        '<table class="rt" style="margin-top:8px"><tr><th>Trace</th><th style="text-align:right">Time</th><th style="text-align:right">Off track</th></tr>' + rows + '</table>' +
+        '<p class="tiny">* stopped before finishing: counted as ' + TIME_CAP + ' s.</p>' +
+        '<h3 style="margin-top:12px">What H.M. did</h3><p class="small">Over three days and 30 traces, Henry Molaison got faster and made fewer errors, like most people. Yet each day he said he had never done the task before.</p>' +
+        '<div class="done"><b>Think:</b> what improved in you over these five traces? Could you <i>say</i> what you learned? Which kind of memory is that?</div>' +
+        '<div class="navrow"><button class="btn2" id="again">Do Part 1 again</button><button class="btn" id="menu">Back to the menu</button></div></div></div>';
+      function drawCharts() {
+        var c1 = el.querySelector("#c1"), wrapW = c1.parentNode.clientWidth || 320, W = Math.min(560, wrapW), H = 200;
+        var tmax = Math.max.apply(null, m.concat([p0 ? p0.time : 0, 10]).filter(function (v) { return v != null; }));
+        var top = Math.ceil(tmax / 10) * 10, ticks = []; for (var t = 0; t <= top; t += (top > 40 ? 20 : 10)) ticks.push(t);
+        var labs = []; for (var i = 1; i <= N_MIRROR; i++) labs.push(String(i));
+        var ser = [{ v: m, color: css("--accent") }]; if (p0) ser.unshift({ hline: p0.time, color: css("--ok"), dash: true, label: "practice, normal view" });
+        lineChart(c1, W, H, ser, { x: labs, yMax: top, ticks: ticks, yLabel: "seconds", xLabel: "mirrored trace" });
+        var emax = Math.max.apply(null, e.concat([p0 ? p0.errors : 0, 4]).filter(function (v) { return v != null; }));
+        var etop = Math.ceil(emax / 5) * 5, et = []; for (var u = 0; u <= etop; u += (etop > 20 ? 10 : 5)) et.push(u);
+        var ser2 = [{ v: e, color: css("--warn") }]; if (p0) ser2.unshift({ hline: p0.errors, color: css("--ok"), dash: true, label: "practice" });
+        lineChart(el.querySelector("#c2"), W, 170, ser2, { x: labs, yMax: etop, ticks: et, yLabel: "times off", xLabel: "mirrored trace" });
+      }
+      drawCharts(); api.onResize(drawCharts);
+      el.querySelector("#again").addEventListener("click", function () { api.finish({ again: true }); });
+      el.querySelector("#menu").addEventListener("click", function () { api.finish({}); });
+    }, "p1results");
+  }
+
+  /* =======================================================================
+     PART 2 · CELLS THAT WIRE TOGETHER (a Hopfield network with a Hebbian rule)
+     ======================================================================= */
+  var G = 12, NN = G * G;
+  var PICS = {
+    house: [".....##.....", "....####....", "...######...", "..########..", ".##########.", "..########..", "..##....##..", "..##....##..", "..##.##.##..", "..##.##.##..", "..########..", "............"],
+    cup: ["............", "..#..#..#...", "...#..#..#..", "............", "#########...", "#########.##", "#########..#", "#########..#", "#########.##", ".#######....", "..#####.....", "############"],
+    cross: ["##........##", "###......###", ".###....###.", "..###..###..", "...######...", "....####....", "....####....", "...######...", "..###..###..", ".###....###.", "###......###", "##........##"]
+  };
+  var PIC_NAMES = ["house", "cup", "cross"];
+  function picVec(rows) { var v = new Int8Array(NN); rows.forEach(function (r, i) { for (var j = 0; j < G; j++) v[i * G + j] = r[j] === "#" ? 1 : -1; }); return v; }
+
+  function hebbPage() {
+    return page(function (el, api) {
+      LAB.done["2"] = true;
+      var W = new Int32Array(NN * NN), learned = {}, extra = 0, own = null, cut = 0, mask = null, noiseSeed = 7;
+      var userPicked = false, state = new Int8Array(NN).fill(-1), cueName = "cup", cueType = "noisy", settling = false, drawMode = false, drawVec = new Int8Array(NN).fill(-1);
+      var P = {}; PIC_NAMES.forEach(function (k) { P[k] = picVec(PICS[k]); });
+      el.innerHTML = headHTML("Part 2 · Cells that wire together", "A memory stored in the connections",
+        "144 model neurons. Learning strengthens the link between any two cells that are active together.") +
+        '<div class="bench tight"><div class="card"><div class="canvwrap" id="wrap"><canvas id="net" aria-label="The network: dark squares are active neurons"></canvas></div>' +
+        '<div class="drawhint" id="dh"></div>' +
+        '<div class="memrow" id="mems"></div><p class="readout" id="ro" aria-live="polite">The network has not learned anything yet.</p><div class="copyline" id="line">—</div></div>' +
+        '<div class="card"><h3>Steps</h3><ol class="steps small">' +
+        '<li><b>Learn</b> the house, the cup and the cross.</li>' +
+        '<li>Cue the <b>cup</b> with a <b>noisy</b> version (30% of cells wrong). Press <b>Settle</b>. Write down the match.</li>' +
+        '<li>Cut <b>50%</b>, then <b>90%</b> of the connections. Settle the noisy cup each time. Write the match.</li>' +
+        '<li>Set the cut back to 0. Press <b>+5 random memories</b> three times (15 extra). Settle the noisy cup. What happens?</li>' +
+        '<li>If you have time: try the <b>top half only</b> cue, or draw your own picture and teach it.</li></ol>' +
+        '<h3 style="margin-top:10px">1 · Learn</h3><div class="btnrow" id="learnRow"></div>' +
+        '<div class="btnrow"><button class="btn2" id="drawBtn">Draw my own</button><button class="btn2" id="learnOwn" disabled>Learn my drawing</button><button class="btn2" id="more">+5 random memories</button></div>' +
+        '<p class="tiny" id="wcount">Connections changed: 0</p>' +
+        '<h3 style="margin-top:6px">2 · Cue and settle</h3>' +
+        '<fieldset class="seg" id="cueNameF"><legend>Which memory?</legend></fieldset>' +
+        '<fieldset class="seg" id="cueTypeF"><legend>What cue?</legend></fieldset>' +
+        '<div class="btnrow"><button class="btn2" id="showCue">Show the cue</button><button class="btn" id="settle">Settle</button><button class="btn2" id="newNoise">New noise</button></div>' +
+        '<h3 style="margin-top:6px">3 · Damage</h3><div class="ctrl"><label for="cut">Cut connections <span class="val" id="cutv">0%</span></label><input type="range" id="cut" min="0" max="98" step="1" value="0"></div>' +
+        '<div class="navrow"><button class="btn2" id="reset">Start again (forget everything)</button><button class="btn" id="menu">Back to the menu</button></div>' +
+        '<p class="tiny" style="margin-top:8px">A model, not a brain: a Hopfield network (1982) using Hebb’s rule. Real memories are spread over millions of cells.</p></div></div>';
+      var cv = el.querySelector("#net"), wrap = el.querySelector("#wrap"), ctx, cell = 24, ro = el.querySelector("#ro"), lineEl = el.querySelector("#line");
+      var names = PIC_NAMES.slice();
+      function memNames() { var n = names.filter(function (k) { return learned[k]; }); if (own && learned.mine) n.push("mine"); return n; }
+      function vecOf(name) { return name === "mine" ? own : P[name]; }
+      // learning: Hebb's rule, w_ij += x_i x_j for every pair (cells active together: stronger)
+      function learn(v) { for (var i = 0; i < NN; i++) { var vi = v[i], row = i * NN; for (var j = 0; j < NN; j++) if (i !== j) W[row + j] += vi * v[j]; } }
+      function changedCount() { var c = 0; for (var i = 0; i < W.length; i++) if (W[i] !== 0) c++; return c; }
+      function makeMask(f) { if (f <= 0) return null; var r = rng(1000 + Math.round(f * 100)), m = new Uint8Array(NN * NN).fill(1); for (var i = 0; i < NN; i++) for (var j = i + 1; j < NN; j++) if (r() < f) { m[i * NN + j] = 0; m[j * NN + i] = 0; } return m; }
+      function size() { var S = fitSquare(el, wrap, 432, 150); S = Math.floor(S / G) * G; cell = S / G; ctx = setupCanvas(cv, S, S); draw(); }
+      function draw() {
+        if (!ctx) return; var S = cell * G, v = drawMode ? drawVec : state;
+        ctx.fillStyle = css("--stage"); ctx.fillRect(0, 0, S, S);
+        for (var i = 0; i < NN; i++) { var r = Math.floor(i / G), c = i % G; ctx.fillStyle = v[i] > 0 ? css("--accent") : css("--grid"); ctx.fillRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2); }
+        if (drawMode) { ctx.strokeStyle = css("--na"); ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, S - 3, S - 3); }
+      }
+      function thumb(v, label, isLearned) {
+        var d = document.createElement("div"); d.className = "mem" + (isLearned ? " learned" : ""); var c = document.createElement("canvas"); var s = 48, cc = setupCanvas(c, s, s), q = s / G;
+        for (var i = 0; i < NN; i++) { cc.fillStyle = v[i] > 0 ? css("--accent") : css("--grid"); cc.fillRect((i % G) * q, Math.floor(i / G) * q, q - 0.5, q - 0.5); }
+        d.appendChild(c); var t = document.createElement("span"); t.textContent = label; d.appendChild(t); return d;
+      }
+      function refresh() {
+        var lr = el.querySelector("#learnRow"); lr.innerHTML = "";
+        names.forEach(function (k) { var b = document.createElement("button"); b.className = "btn2" + (learned[k] ? " on" : ""); b.textContent = learned[k] ? "Learned: " + k + " ✓" : "Learn the " + k; b.disabled = !!learned[k] || settling; b.addEventListener("click", function () { learn(P[k]); learned[k] = true; refresh(); ro.textContent = "Learned the " + k + ". Every pair of cells that were both on (or both off) got a stronger link; pairs that disagreed got a weaker one."; }); lr.appendChild(b); });
+        var mm = el.querySelector("#mems"); mm.innerHTML = "";
+        memNames().forEach(function (k) { mm.appendChild(thumb(vecOf(k), k, true)); });
+        if (extra) { var d = document.createElement("div"); d.className = "mem"; d.innerHTML = '<span class="pill">+' + extra + ' random</span>'; mm.appendChild(d); }
+        el.querySelector("#wcount").textContent = "Memories stored: " + (memNames().length + extra) + " · connections changed: " + changedCount().toLocaleString() + " of " + (NN * (NN - 1)).toLocaleString();
+        var cf = el.querySelector("#cueNameF"), opts = memNames();
+        cf.innerHTML = "<legend>Which memory?</legend>" + (opts.length ? opts : names).map(function (k) { return '<label><input type="radio" name="cn" value="' + k + '"' + (k === cueName ? " checked" : "") + '>' + k + '</label>'; }).join("");
+        if (!userPicked && learned.cup) cueName = "cup";
+        if (opts.length && opts.indexOf(cueName) < 0) cueName = opts[0];
+        cf.querySelectorAll("input").forEach(function (r) { r.checked = r.value === cueName; });
+        cf.querySelectorAll("input").forEach(function (r) { r.addEventListener("change", function () { cueName = r.value; userPicked = true; }); });
+        var tf = el.querySelector("#cueTypeF");
+        tf.innerHTML = "<legend>What cue?</legend>" + [["noisy", "noisy (30% wrong)"], ["top", "top half only"], ["left", "left half only"]].map(function (o) { return '<label><input type="radio" name="ct" value="' + o[0] + '"' + (o[0] === cueType ? " checked" : "") + '>' + o[1] + '</label>'; }).join("");
+        tf.querySelectorAll("input").forEach(function (r) { r.addEventListener("change", function () { cueType = r.value; }); });
+        el.querySelectorAll("#settle,#showCue,#more,#reset,#newNoise,#drawBtn").forEach(function (b) { b.disabled = settling; });
+        el.querySelector("#learnOwn").disabled = settling || !drawMode;
+        el.querySelector("#cut").disabled = settling;
+      }
+      function makeCue() {
+        var src = vecOf(cueName) || P[cueName], s = Int8Array.from(src);
+        if (cueType === "noisy") { var r = rng(noiseSeed); for (var i = 0; i < NN; i++) if (r() < 0.3) s[i] = -s[i]; }
+        else for (var q = 0; q < NN; q++) { var row = Math.floor(q / G), col = q % G; if ((cueType === "top" && row >= G / 2) || (cueType === "left" && col >= G / 2)) s[q] = -1; }
+        return s;
+      }
+      function score(s) {
+        var tgt = vecOf(cueName), m = 0, best = null, bm = -1;
+        for (var i = 0; i < NN; i++) if (s[i] === tgt[i]) m++;
+        memNames().forEach(function (k) { var v = vecOf(k), c = 0; for (var i = 0; i < NN; i++) if (s[i] === v[i]) c++; if (c > bm) { bm = c; best = k; } });
+        return { match: m / NN, best: best, bestMatch: bm / NN };
+      }
+      function describe(prefix) {
+        var sc = score(state), ok = sc.best === cueName && sc.match > 0.97;
+        var msg = prefix + " Match with the " + cueName + ": " + pct(sc.match) + ". " +
+          (ok ? "It recalled the " + cueName + "." : (sc.best && sc.best !== cueName && sc.bestMatch > sc.match ? "It looks more like the " + sc.best + " (" + pct(sc.bestMatch) + ")." : "Not a clean " + cueName + ": a blend, or a memory nobody stored."));
+        ro.textContent = msg;
+        lineEl.textContent = "cue: " + cueName + " (" + cueType + ") | cut " + cut + "% | memories " + (memNames().length + extra) + " (" + extra + " random) | match " + pct(sc.match) + (ok ? " | recalled" : (sc.best && sc.best !== cueName && sc.bestMatch > sc.match ? " | became: " + sc.best : " | blend"));
+      }
+      el.querySelector("#showCue").addEventListener("click", function () {
+        if (!memNames().length) { ro.textContent = "Learn at least one picture first (step 1)."; return; }
+        drawMode = false; state = makeCue(); draw(); refresh();
+        var sc = score(state); ro.textContent = "This is the cue. It matches the " + cueName + " on " + pct(sc.match) + " of cells. Now press Settle.";
+      });
+      el.querySelector("#newNoise").addEventListener("click", function () { noiseSeed++; if (cueType === "noisy" && memNames().length) { state = makeCue(); draw(); ro.textContent = "A new noisy cue. Press Settle."; } });
+      el.querySelector("#settle").addEventListener("click", function () {
+        if (!memNames().length) { ro.textContent = "Learn at least one picture first (step 1)."; return; }
+        if (drawMode) { drawMode = false; }
+        var sc0 = score(state); if (sc0.match < 0.5 && state.every(function (x) { return x === -1; })) state = makeCue();
+        settling = true; refresh();
+        var r = rng(1), sweep = 0, changed = 0, order = [], pos = 0, perFrame = reduceMotion ? NN * 20 : 12;
+        function newOrder() { order = []; for (var i = 0; i < NN; i++) order.push(i); for (var j = NN - 1; j > 0; j--) { var t = Math.floor(r() * (j + 1)), tmp = order[j]; order[j] = order[t]; order[t] = tmp; } pos = 0; changed = 0; }
+        newOrder();
+        function stepN(n) {
+          for (var c = 0; c < n; c++) {
+            var i = order[pos], h = 0, row = i * NN;
+            if (mask) { for (var j = 0; j < NN; j++) if (mask[row + j]) h += W[row + j] * state[j]; }
+            else { for (var j2 = 0; j2 < NN; j2++) h += W[row + j2] * state[j2]; }
+            var ns = h > 0 ? 1 : (h < 0 ? -1 : state[i]); if (ns !== state[i]) { state[i] = ns; changed++; }
+            pos++;
+            if (pos >= NN) { sweep++; if (!changed || sweep >= 15) return true; newOrder(); }
+          }
+          return false;
+        }
+        function frame() { var fin = stepN(perFrame); draw(); if (fin) { settling = false; refresh(); describe("Settled after " + sweep + " sweep" + (sweep === 1 ? "" : "s") + "."); } else raf = requestAnimationFrame(frame); }
+        var raf = requestAnimationFrame(frame);
+        api.onCleanup(function () { cancelAnimationFrame(raf); });
+      });
+      var cutIn = el.querySelector("#cut"), cutv = el.querySelector("#cutv");
+      cutIn.addEventListener("input", function () { cut = +cutIn.value; cutv.textContent = cut + "%"; });
+      cutIn.addEventListener("change", function () { mask = makeMask(cut / 100); ro.textContent = cut ? ("Cut " + cut + "% of connections. Show the cue and settle again.") : "All connections restored."; });
+      el.querySelector("#more").addEventListener("click", function () {
+        var r = rng(99 + extra * 7);
+        for (var e = 0; e < 5; e++) { var v = new Int8Array(NN); for (var i = 0; i < NN; i++) v[i] = r() < 0.5 ? 1 : -1; learn(v); }
+        extra += 5; refresh(); ro.textContent = "Stored 5 more random memories (" + extra + " extra in all). Cue and settle again.";
+      });
+      el.querySelector("#drawBtn").addEventListener("click", function () { drawMode = !drawMode; if (drawMode) { drawVec = new Int8Array(NN).fill(-1); el.querySelector("#dh").textContent = "Drawing: tap or drag on the squares, then press ‘Learn my drawing’."; } else el.querySelector("#dh").textContent = ""; draw(); refresh(); });
+      el.querySelector("#learnOwn").addEventListener("click", function () {
+        var on = 0; drawVec.forEach(function (x) { if (x > 0) on++; });
+        if (on < 6) { el.querySelector("#dh").textContent = "Draw a bit more first (at least 6 squares)."; return; }
+        own = Int8Array.from(drawVec); learn(own); learned.mine = true; drawMode = false; el.querySelector("#dh").textContent = ""; if (names.indexOf("mine") < 0) names.push("mine");
+        cueName = "mine"; refresh(); draw(); ro.textContent = "Learned your drawing as ‘mine’. Cue it and settle.";
+      });
+      var painting = false, paintVal = 1;
+      function cellAt(ev) { var r = cv.getBoundingClientRect(), c = Math.floor((ev.clientX - r.left) / r.width * G), rr = Math.floor((ev.clientY - r.top) / r.height * G); if (c < 0 || c >= G || rr < 0 || rr >= G) return -1; return rr * G + c; }
+      cv.addEventListener("pointerdown", function (ev) { if (!drawMode) return; ev.preventDefault(); var i = cellAt(ev); if (i < 0) return; painting = true; paintVal = drawVec[i] > 0 ? -1 : 1; drawVec[i] = paintVal; try { cv.setPointerCapture(ev.pointerId); } catch (e) {} draw(); });
+      cv.addEventListener("pointermove", function (ev) { if (!drawMode || !painting) return; var i = cellAt(ev); if (i >= 0 && drawVec[i] !== paintVal) { drawVec[i] = paintVal; draw(); } });
+      cv.addEventListener("pointerup", function () { painting = false; }); cv.addEventListener("pointercancel", function () { painting = false; });
+      el.querySelector("#reset").addEventListener("click", function () { W = new Int32Array(NN * NN); learned = {}; extra = 0; own = null; names = PIC_NAMES.slice(); cueName = "cup"; state = new Int8Array(NN).fill(-1); cut = 0; mask = null; cutIn.value = 0; cutv.textContent = "0%"; refresh(); draw(); ro.textContent = "Everything forgotten: all connections back to zero."; lineEl.textContent = "—"; });
+      el.querySelector("#menu").addEventListener("click", function () { api.finish({}); });
+      api.onResize(size); refresh(); size();
+    }, "hebb");
+  }
+
+  /* =======================================================================
+     PART 3 · REMEMBERING IS REBUILDING (Deese–Roediger–McDermott word lists)
+     ======================================================================= */
+  // First ten associates of four lists after Roediger & McDermott (1995). The list's theme word is never shown.
+  var LISTS = [
+    { lure: "sleep", words: ["bed", "rest", "awake", "tired", "dream", "wake", "snooze", "blanket", "doze", "slumber"] },
+    { lure: "sweet", words: ["sour", "candy", "sugar", "bitter", "good", "taste", "tooth", "nice", "honey", "soda"] },
+    { lure: "cold", words: ["hot", "snow", "warm", "winter", "ice", "wet", "frigid", "chilly", "heat", "weather"] },
+    { lure: "doctor", words: ["nurse", "sick", "lawyer", "medicine", "health", "hospital", "dentist", "physician", "ill", "patient"] }
+  ];
+  var TEST_ITEMS = [];
+  LISTS.forEach(function (L) { [0, 4, 9].forEach(function (i) { TEST_ITEMS.push({ word: L.words[i], cat: "studied" }); }); TEST_ITEMS.push({ word: L.lure, cat: "lure" }); });
+  ["table", "sofa", "cushion", "door", "curtain", "frame"].forEach(function (w) { TEST_ITEMS.push({ word: w, cat: "new" }); });
+  ["chair", "window"].forEach(function (w) { TEST_ITEMS.push({ word: w, cat: "newlure" }); });
+  var ANS = ["Seen: sure", "Seen: I think so", "New: I think so", "New: sure"];
+  var WORD_MS = FAST ? 120 : 1500, GAP_MS = FAST ? 40 : 250, DISTRACT_S = FAST ? 3 : 30;
+  var DRM = [];
+
+  function drmIntro() {
+    return page(function (el, api) {
+      el.innerHTML = '<div class="read"><span class="eyebrow">Part 3 · Remembering is rebuilding</span><h2>A memory test in two halves</h2>' +
+        '<ol class="partlist"><li><b>Study.</b> You will see four short lists of words, one word at a time (1.5 seconds each). Just read each word and try to remember it. About 80 seconds.</li>' +
+        '<li><b>A short pause</b> of quick sums (30 seconds).</li>' +
+        '<li><b>Test.</b> 24 words, one at a time. For each, say whether it was in the lists, and how sure you are.</li></ol>' +
+        '<div class="calm">No sound, no flashing. Words simply appear and disappear. There is no trick to spot: just do your best.</div>' +
+        '<div class="navrow"><button class="btn2" id="back">Back to the menu</button><button class="btn" id="go">Start the lists</button></div></div>';
+      el.querySelector("#go").addEventListener("click", function () { DRM = []; api.finish({}); });
+      el.querySelector("#back").addEventListener("click", function () { api.finish({ abort: true }); });
+    }, "p3intro");
+  }
+  function drmStudy() {
+    var tl = [];
+    LISTS.forEach(function (L, li) {
+      tl.push({ type: jsPsychHtmlButtonResponse, stimulus: '<div class="listcard">List ' + (li + 1) + ' of 4</div>', choices: [], trial_duration: FAST ? 100 : 1300, data: { tag: "drm-list" }, on_start: function () { if (li === 0) DRM = []; } });
+      L.words.forEach(function (w) { tl.push({ type: jsPsychHtmlButtonResponse, stimulus: '<div class="word">' + esc(w) + '</div>', choices: [], trial_duration: WORD_MS, post_trial_gap: GAP_MS, data: { tag: "drm-study", word: w } }); });
+    });
+    return { timeline: tl };
+  }
+  function drmDistract() {
+    return page(function (el, api) {
+      el.innerHTML = '<div class="read"><span class="eyebrow">Part 3 · the pause</span><h2>Quick sums</h2><p class="testq">Is the sum right? Answer as many as you can.</p>' +
+        '<div class="arith" id="q"></div><div class="row" style="justify-content:center"><button class="btn" id="yes">Right</button><button class="btn2" id="no">Wrong</button></div>' +
+        '<p class="testcount" id="left"></p></div>';
+      var r = rng(Date.now() % 100000 + 3), q = el.querySelector("#q"), left = el.querySelector("#left"), cur = null, t0 = performance.now();
+      function next() { var a = 11 + Math.floor(r() * 40), b = 3 + Math.floor(r() * 9), sub = r() < 0.5, ans = sub ? a - b : a + b, shown = r() < 0.5 ? ans : ans + (r() < 0.5 ? -1 : 1) * (1 + Math.floor(r() * 3)); cur = shown === ans; q.textContent = a + (sub ? " − " : " + ") + b + " = " + shown; }
+      el.querySelector("#yes").addEventListener("click", next); el.querySelector("#no").addEventListener("click", next);
+      next();
+      var iv = setInterval(function () { var s = DISTRACT_S - (performance.now() - t0) / 1000; left.textContent = Math.max(0, Math.ceil(s)) + " s left"; if (s <= 0) { clearInterval(iv); api.finish({}); } }, 200);
+      api.onCleanup(function () { clearInterval(iv); });
+    }, "p3pause");
+  }
+  function drmTest(jsPsych) {
+    var items = jsPsych.randomization.shuffle(TEST_ITEMS.slice());
+    return {
+      timeline: items.map(function (it, n) {
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: '<div class="testword">' + esc(it.word) + '</div><p class="testq">Was this word in the lists?</p><p class="testcount">' + (n + 1) + ' of ' + items.length + '</p>',
+          choices: ANS,
+          button_html: ['<button class="jspsych-btn ansbtn">%choice%</button>', '<button class="jspsych-btn ansbtn">%choice%</button>', '<button class="jspsych-btn ansbtn new">%choice%</button>', '<button class="jspsych-btn ansbtn new">%choice%</button>'],
+          data: { tag: "drm-test", word: it.word, cat: it.cat },
+          on_finish: function (d) { DRM.push({ word: it.word, cat: it.cat, resp: d.response }); }
+        };
+      })
+    };
+  }
+  function drmResults() {
+    return page(function (el, api) {
+      LAB.done["3"] = true;
+      function rate(cat, sureOnly) { var xs = DRM.filter(function (d) { return cat.indexOf(d.cat) >= 0; }); if (!xs.length) return null; var n = xs.filter(function (d) { return sureOnly ? d.resp === 0 : (d.resp === 0 || d.resp === 1); }).length; return { n: n, of: xs.length, p: n / xs.length }; }
+      var S = rate(["studied"]), Lr = rate(["lure"]), Nw = rate(["new", "newlure"]), Ls = rate(["lure"], true), Ss = rate(["studied"], true);
+      function bar(label, r, color) { var p = r ? r.p : 0; return '<div class="barrow"><span>' + label + '</span><div class="bartrack"><div class="bar" style="width:' + Math.round(p * 100) + '%;background:' + color + '"></div></div><span class="v">' + (r ? r.n + "/" + r.of : "–") + '</span></div>'; }
+      var chips = LISTS.map(function (L) { var d = DRM.filter(function (x) { return x.word === L.lure; })[0]; var said = d && (d.resp === 0 || d.resp === 1); return '<span class="chip' + (said ? ' yes' : '') + '">' + L.lure + (said ? (d.resp === 0 ? ': seen, sure' : ': seen') : ': new') + '</span>'; }).join("");
+      var line = "Said ‘seen’ to: studied " + (S ? S.n + "/" + S.of : "–") + " | theme words never shown " + (Lr ? Lr.n + "/" + Lr.of : "–") + " (sure: " + (Ls ? Ls.n : "–") + ") | unrelated new " + (Nw ? Nw.n + "/" + Nw.of : "–");
+      el.innerHTML = headHTML("Part 3 · Remembering is rebuilding · results", "Which words did you ‘remember’?",
+        "Each list was built around a theme word that was never shown: sleep, sweet, cold, doctor.") +
+        '<div class="bench"><div class="card"><h3>How often you said ‘seen’</h3>' +
+        bar("Words that were in the lists", S, css("--ok")) + bar("Theme words, never shown", Lr, css("--warn")) + bar("Unrelated new words", Nw, css("--muted")) +
+        '<h3 style="margin-top:12px">The four theme words</h3><div class="chips">' + chips + '</div>' +
+        '<p class="small" style="margin-top:10px">Roediger and McDermott (1995) found that people said ‘seen’ to these never-shown theme words about as often as to words that really were on the lists, and often said they were <i>sure</i>.</p></div>' +
+        '<div class="card"><h3>Write this down</h3><div class="copyline">' + line + '</div>' +
+        '<p class="small" style="margin-top:8px">You were sure about ' + (Ss ? Ss.n + " of " + Ss.of : "–") + ' studied words and ' + (Ls ? Ls.n + " of " + Ls.of : "–") + ' theme words.</p>' +
+        '<div class="done"><b>Think:</b> you did not store the word ‘sleep’, yet it may have felt familiar. What does that suggest happens when you <i>recall</i> something: playback, or rebuilding from the gist?</div>' +
+        '<div class="navrow"><button class="btn2" id="again">Do Part 3 again</button><button class="btn" id="menu">Back to the menu</button></div></div></div>';
+      el.querySelector("#again").addEventListener("click", function () { api.finish({ again: true }); });
+      el.querySelector("#menu").addEventListener("click", function () { api.finish({}); });
+    }, "p3results");
+  }
+
+  /* =======================================================================
+     TIMELINE
+     ======================================================================= */
+  var jsPsych = initJsPsych({ display_element: target });
+  function last() { var d = jsPsych.data.get().values(); return d[d.length - 1] || {}; }
+  var part1 = {
+    timeline: [mirrorIntro(), { timeline: (function () { var t = []; for (var k = 0; k <= N_MIRROR; k++) t.push(mirrorTrace(k)); t.push(mirrorResults()); return t; })(),
+      conditional_function: function () { return !last().abort; }, loop_function: function () { return last().tag === "p1results" && !!last().again; } }],
+    conditional_function: function () { return CHOICE.go === "1"; }
+  };
+  var part2 = { timeline: [hebbPage()], conditional_function: function () { return CHOICE.go === "2"; } };
+  var part3 = {
+    timeline: [drmIntro(), { timeline: [drmStudy(), drmDistract(), drmTest(jsPsych), drmResults()],
+      conditional_function: function () { return !last().abort; }, loop_function: function () { return last().tag === "p3results" && !!last().again; } }],
+    conditional_function: function () { return CHOICE.go === "3"; }
+  };
+  var hub = { timeline: [menuPage(), part1, part2, part3], loop_function: function () { CHOICE.go = null; return true; } };
+  jsPsych.run([hub]);
+})();
+</script>
+</body>
+</html>
